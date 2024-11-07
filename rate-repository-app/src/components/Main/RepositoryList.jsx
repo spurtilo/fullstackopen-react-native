@@ -1,31 +1,62 @@
-import { Text, FlatList, View, StyleSheet } from 'react-native';
-import RepositoryItem from './RepositoryItem';
+import { Text } from 'react-native';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-native';
+import { useDebounce } from 'use-debounce';
 import useRepositories from '../../hooks/useRepositories';
+import RepositoryListContainer from './RepositoryListContainer';
 
-const styles = StyleSheet.create({
-  separator: {
-    height: 10,
+const sortingOptions = {
+  latest: {
+    orderBy: 'CREATED_AT',
+    orderDirection: 'DESC',
   },
-});
-
-export const ItemSeparator = () => <View style={styles.separator} />;
+  highest: {
+    orderBy: 'RATING_AVERAGE',
+    orderDirection: 'DESC',
+  },
+  lowest: {
+    orderBy: 'RATING_AVERAGE',
+    orderDirection: 'ASC',
+  },
+};
 
 const RepositoryList = () => {
-  const { repositories, loading } = useRepositories();
+  const [currentSortOption, setCurrentSortOption] = useState('latest');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery] = useDebounce(searchQuery, 500);
+  const { repositories, loading, error, refetch, fetchMore } = useRepositories({
+    first: 8,
+    ...sortingOptions[currentSortOption],
+  });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    refetch({
+      ...sortingOptions[currentSortOption],
+      searchKeyword: debouncedQuery,
+    });
+  }, [currentSortOption, debouncedQuery, refetch]);
+
+  const onEndReach = () => {
+    fetchMore();
+  };
 
   if (loading) {
     return <Text>Loading...</Text>;
   }
-
-  const repositoryNodes = repositories
-    ? repositories.edges.map((edge) => edge.node)
-    : [];
+  if (error) {
+    return <Text>Error loading reviews. Please try again.</Text>;
+  }
 
   return (
-    <FlatList
-      data={repositoryNodes}
-      ItemSeparatorComponent={ItemSeparator}
-      renderItem={({ item }) => <RepositoryItem {...item} />}
+    <RepositoryListContainer
+      repositories={repositories}
+      currentSortOption={currentSortOption}
+      searchQuery={searchQuery}
+      setCurrentSortOption={setCurrentSortOption}
+      setSearchQuery={setSearchQuery}
+      navigate={navigate}
+      onEndReach={onEndReach}
     />
   );
 };

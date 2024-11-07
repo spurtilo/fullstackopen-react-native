@@ -1,4 +1,5 @@
-import { View, StyleSheet, Image } from 'react-native';
+import { View, StyleSheet, Image, Pressable } from 'react-native';
+import * as Linking from 'expo-linking';
 import theme from '../../theme';
 import Text from '../Text';
 
@@ -42,6 +43,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
+  githubButton: {
+    backgroundColor: theme.colors.primary,
+    padding: 15,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
 });
 
 const RepositoryItem = ({
@@ -53,6 +60,8 @@ const RepositoryItem = ({
   ratingAverage,
   reviewCount,
   ownerAvatarUrl,
+  url,
+  displayGithubButton = false,
 }) => {
   const roundNumber = (number) => {
     if (typeof number !== 'number' || isNaN(number)) {
@@ -64,8 +73,16 @@ const RepositoryItem = ({
     return number;
   };
 
+  const handleOpenUrl = async () => {
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error('Error opening URL:', error);
+    }
+  };
+
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID="repositoryItem">
       <View style={styles.header}>
         <View>
           <Image source={{ uri: ownerAvatarUrl }} style={styles.profileImage} />
@@ -75,11 +92,13 @@ const RepositoryItem = ({
           <Text fontSize="subHeading" fontWeight="bold">
             {fullName}
           </Text>
-          <Text color="textSecondary">{description}</Text>
+          {description && <Text color="textSecondary">{description}</Text>}
           <View style={styles.languageTagContainer}>
-            <View style={styles.languageTag}>
-              <Text color="textWhite">{language}</Text>
-            </View>
+            {language && (
+              <View style={styles.languageTag}>
+                <Text color="textWhite">{language}</Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -102,6 +121,16 @@ const RepositoryItem = ({
           <Text color="textSecondary">Rating</Text>
         </View>
       </View>
+
+      {displayGithubButton && (
+        <Pressable onPress={handleOpenUrl}>
+          <View style={styles.githubButton}>
+            <Text color="textWhite" fontSize="subHeading" fontWeight="bold">
+              Open in GitHub
+            </Text>
+          </View>
+        </Pressable>
+      )}
     </View>
   );
 };
